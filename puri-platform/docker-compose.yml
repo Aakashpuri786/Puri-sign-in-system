@@ -1,0 +1,91 @@
+services:
+  # MongoDB Database
+  mongo:
+    image: mongo:7
+    container_name: puri-mongo
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    networks:
+      - puri-network
+    restart: unless-stopped
+
+  # Puri Auth Backend
+  puri-auth-backend:
+    build:
+      context: ./puri-auth/backend
+      dockerfile: Dockerfile
+    container_name: puri-auth-backend
+    ports:
+      - "5000:5000"
+    environment:
+      - PORT=5000
+      - MONGODB_URI=mongodb://mongo:27017/puri-auth
+      - JWT_SECRET=puri-secret-key-change-in-production
+      - JWT_EXPIRES_IN=24h
+      - SERVICE_SECRET=puri-service-secret
+    depends_on:
+      - mongo
+    networks:
+      - puri-network
+    restart: unless-stopped
+
+  # Puri Auth Frontend
+  puri-auth-frontend:
+    build:
+      context: ./puri-auth/frontend
+      dockerfile: Dockerfile
+    container_name: puri-auth-frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - VITE_API_URL=http://localhost:5000
+    depends_on:
+      - puri-auth-backend
+    networks:
+      - puri-network
+    restart: unless-stopped
+
+  # Website Backend
+  website-backend:
+    build:
+      context: ./website/backend
+      dockerfile: Dockerfile
+    container_name: website-backend
+    ports:
+      - "4000:4000"
+    environment:
+      - PORT=4000
+      - PURI_AUTH_API=http://puri-auth-backend:5000
+      - SERVICE_SECRET=puri-service-secret
+    depends_on:
+      - puri-auth-backend
+    networks:
+      - puri-network
+    restart: unless-stopped
+
+  # Website Frontend
+  website-frontend:
+    build:
+      context: ./website/frontend
+      dockerfile: Dockerfile
+    container_name: website-frontend
+    ports:
+      - "5173:5173"
+    environment:
+      - VITE_API_URL=http://localhost:4000
+      - VITE_PURI_AUTH_URL=http://localhost:3000
+    depends_on:
+      - website-backend
+    networks:
+      - puri-network
+    restart: unless-stopped
+
+networks:
+  puri-network:
+    driver: bridge
+
+volumes:
+  mongo_data:
+
