@@ -7,7 +7,7 @@ If you are a fresher and get confused by OAuth, tokens, or authentication words 
 ---
 
 ## 🎯 Project Goal
-
+ 
 - Learn how modern login systems work
 - Understand Google Sign-In in a simple way
 - Build a working alternative: **Sign in with Puri**
